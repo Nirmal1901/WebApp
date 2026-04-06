@@ -2,6 +2,7 @@
 # 🚨 DEMO BROKEN VERSION - contains 3 deliberate bugs 🚨
 from flask import Flask, jsonify, request
 
+
 app = Flask(__name__)
 
 users = {
