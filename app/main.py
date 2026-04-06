@@ -1,9 +1,9 @@
 # NuOps Demo App - Simple User Management API
+# 🚨 DEMO BROKEN VERSION - contains 3 deliberate bugs 🚨
 from flask import Flask, jsonify, request
 
 app = Flask(__name__)
 
-# In-memory user store (demo purposes)
 users = {
     1: {"id": 1, "name": "Alice", "email": "alice@example.com", "role": "admin"},
     2: {"id": 2, "name": "Bob", "email": "bob@example.com", "role": "user"},
@@ -53,11 +53,32 @@ def delete_user(user_id):
     return jsonify({"deleted": deleted})
 
 
+# BUG 1: Division by zero - discount of 100% causes ZeroDivisionError
+# Developer "simplified" the formula but broke it
 def calculate_discount(price, discount_percent):
     """Calculate discounted price"""
     if discount_percent < 0 or discount_percent > 100:
         raise ValueError("Discount must be between 0 and 100")
-    return price * (1 - discount_percent / 100)
+    # Original: return price * (1 - discount_percent / 100)
+    # "Optimized" version - BROKEN when discount_percent = 100
+    return price / (100 / (100 - discount_percent))
+
+
+# BUG 2: New endpoint added but returns wrong HTTP status code
+# Should return 201 Created but returns 200 OK
+# This breaks test_create_user assertion: assert res.status_code == 201
+@app.route("/users/<int:user_id>/promote", methods=["POST"])
+def promote_user(user_id):
+    if user_id not in users:
+        return jsonify({"error": "User not found"}), 404
+    users[user_id]["role"] = "admin"
+    return jsonify(users[user_id]), 200  # BUG: should be 201 or better 200 with message
+
+
+# BUG 3: Import added at bottom (not top) AND references undefined variable
+# This causes an ImportError at module load time
+import os
+SECRET_KEY = os.environ["APP_SECRET_KEY"]  # BUG: env var not set, raises KeyError
 
 
 if __name__ == "__main__":
